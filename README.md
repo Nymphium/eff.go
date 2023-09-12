@@ -2,7 +2,6 @@ Eff.go
 =======
 
 ONE-SHOT Algebiraic Effects for Golang!
-It is based on channel, goroutine and [Russ Cox's coroutine using them](https://research.swtch.com/coro).
 
 # One-shot algebraic effects
 You can access the delimited continuation which can run only once. Even the limitation exists, you can write powerful control flow manipulation, like async/await, call/1cc.

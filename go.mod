@@ -1,4 +1,4 @@
-module github.com/nymphium/eff
+module github.com/nymphium/eff.go
 
 go 1.21
 

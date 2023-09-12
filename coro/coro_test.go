@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nymphium/eff/src/coro"
+	"github.com/nymphium/eff.go/coro"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,9 +18,9 @@ func TestCoro(t *testing.T) {
 		msg2 := "world"
 		msg3 := "!"
 
-		c := coro.New(func(_ any, yield coro.Yield[any, string]) (out string, err error) {
-			_, _ = yield(msg1)
-			_, _ = yield(msg2)
+		c := coro.New(func(arg any) (out any, err error) {
+			_ = coro.Yield(msg1)
+			_ = coro.Yield(msg2)
 
 			return msg3, nil
 		})
@@ -37,7 +37,7 @@ func TestCoro(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, msg3, out)
 
-		assert.Equal(t, coro.StateDone, c.State())
+		assert.Equal(t, coro.StatusDone, c.Status)
 	})
 
 	t.Run("communicate", func(t *testing.T) {
@@ -46,9 +46,8 @@ func TestCoro(t *testing.T) {
 		syn := "syn"
 		ack := "ack"
 
-		c := coro.New(func(_ any, yield coro.Yield[any, any]) (out any, err error) {
-			rcv, err := yield(syn)
-			assert.NoError(t, err)
+		c := coro.New(func(arg any) (any, error) {
+			rcv := coro.Yield(syn)
 			assert.Equal(t, ack, rcv)
 
 			return nil, nil
@@ -63,27 +62,12 @@ func TestCoro(t *testing.T) {
 		assert.Nil(t, rcv)
 	})
 
-	t.Run("cancel", func(t *testing.T) {
-		t.Parallel()
-
-		c := coro.New(func(_ any, yield coro.Yield[any, any]) (out any, err error) {
-			_, err = yield(nil)
-			assert.True(t, errors.Is(err, coro.ErrCanceled), "got", err)
-
-			return nil, nil
-		})
-
-		_, _ = c.Resume(nil)
-		err := c.Cancel()
-		assert.NoError(t, err)
-	})
-
 	t.Run("error", func(t *testing.T) {
 		t.Parallel()
 
 		e := errors.New("error inside")
 
-		c := coro.New(func(_ any, yield coro.Yield[any, any]) (any, error) {
+		c := coro.New(func(any) (any, error) {
 			return nil, e
 		})
 
@@ -94,10 +78,27 @@ func TestCoro(t *testing.T) {
 	t.Run("panic", func(t *testing.T) {
 		t.Parallel()
 
-		c := coro.New(func(_ any, yield coro.Yield[any, any]) (any, error) {
+		c := coro.New(func(any) (any, error) {
 			panic(42)
 		})
 
 		assert.Panics(t, func() { c.Resume(nil) })
+	})
+
+	t.Run("across call stack", func(t *testing.T) {
+		t.Parallel()
+
+		helloYield := func() any {
+			return coro.Yield("hello")
+		}
+
+		c := coro.New(func(any) (v any, err error) {
+			r := helloYield()
+			assert.Equal(t, "hello", r)
+			return
+		})
+
+		_, err := c.Resume(nil)
+		assert.NoError(t, err)
 	})
 }
