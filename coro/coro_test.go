@@ -5,11 +5,23 @@ import (
 	"testing"
 
 	"github.com/nymphium/eff.go/coro"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCoro(t *testing.T) {
 	t.Parallel()
+
+	t.Run("nothing", func(t *testing.T) {
+		t.Parallel()
+
+		c := coro.New(func(any) (any, error) {
+			return 42, nil
+		})
+
+		res, err := c.Resume(nil)
+		require.NoError(t, err)
+		require.Equal(t, 42, res)
+	})
 
 	t.Run("basic", func(t *testing.T) {
 		t.Parallel()
@@ -26,18 +38,18 @@ func TestCoro(t *testing.T) {
 		})
 
 		out, err := c.Resume(nil)
-		assert.NoError(t, err)
-		assert.Equal(t, msg1, out)
+		require.NoError(t, err)
+		require.Equal(t, msg1, out)
 
 		out, err = c.Resume(nil)
-		assert.NoError(t, err)
-		assert.Equal(t, msg2, out)
+		require.NoError(t, err)
+		require.Equal(t, msg2, out)
 
 		out, err = c.Resume(nil)
-		assert.NoError(t, err)
-		assert.Equal(t, msg3, out)
+		require.NoError(t, err)
+		require.Equal(t, msg3, out)
 
-		assert.Equal(t, coro.StatusDone, c.Status)
+		require.Equal(t, coro.StatusDone, c.Status)
 	})
 
 	t.Run("communicate", func(t *testing.T) {
@@ -48,18 +60,18 @@ func TestCoro(t *testing.T) {
 
 		c := coro.New(func(arg any) (any, error) {
 			rcv := coro.Yield(syn)
-			assert.Equal(t, ack, rcv)
+			require.Equal(t, ack, rcv)
 
 			return nil, nil
 		})
 
 		rcv, err := c.Resume(nil)
-		assert.NoError(t, err)
-		assert.Equal(t, syn, rcv)
+		require.NoError(t, err)
+		require.Equal(t, syn, rcv)
 
 		rcv, err = c.Resume(ack)
-		assert.NoError(t, err)
-		assert.Nil(t, rcv)
+		require.NoError(t, err)
+		require.Nil(t, rcv)
 	})
 
 	t.Run("error", func(t *testing.T) {
@@ -72,7 +84,7 @@ func TestCoro(t *testing.T) {
 		})
 
 		_, err := c.Resume(nil)
-		assert.True(t, errors.Is(err, e))
+		require.True(t, errors.Is(err, e))
 	})
 
 	t.Run("panic", func(t *testing.T) {
@@ -82,7 +94,7 @@ func TestCoro(t *testing.T) {
 			panic(42)
 		})
 
-		assert.Panics(t, func() { c.Resume(nil) })
+		require.Panics(t, func() { c.Resume(nil) })
 	})
 
 	t.Run("across call stack", func(t *testing.T) {
@@ -94,11 +106,17 @@ func TestCoro(t *testing.T) {
 
 		c := coro.New(func(any) (v any, err error) {
 			r := helloYield()
-			assert.Equal(t, "hello", r)
+			require.Equal(t, "hello", r)
 			return
 		})
 
 		_, err := c.Resume(nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
+	})
+
+	t.Run("toplevel yield", func(t *testing.T) {
+		t.Parallel()
+
+		require.PanicsWithError(t, coro.ErrCoroutineCannotYield.Error(), func() { coro.Yield("hello") })
 	})
 }

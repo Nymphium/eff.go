@@ -20,6 +20,7 @@ var (
 	ErrCoroutine             = errors.New("coroutine error")
 	ErrCoroutineNotRunning   = errors.Join(ErrCoroutine, errors.New("coroutine not running"))
 	ErrCoroutineCannotResume = errors.Join(ErrCoroutine, errors.New("coroutine cannot resume"))
+	ErrCoroutineCannotYield  = errors.Join(ErrCoroutine, errors.New("coroutine cannot yield"))
 )
 
 // result of coroutine
@@ -66,12 +67,16 @@ func New(f func(any) (any, error)) *T {
 
 func Yield(x any) any {
 	// get returning point of resume
-	returning := chan_stack.Pop()
+	returning := chan_stack.Returning.Pop()
+	// toplevel yield not allowed
+	if returning == nil {
+		panic(ErrCoroutineCannotYield)
+	}
 	defer close(returning)
 
 	// make entering point and push for next resume
-	entering := chan_stack.PushNew()
-	defer chan_stack.DeleteBySelf(entering)
+	entering := chan_stack.Entering.PushNew()
+	defer chan_stack.Entering.DeleteBySelf(entering)
 
 	// pass value to current resume point
 	returning <- x
@@ -85,7 +90,7 @@ func (co *T) getEnteringPoint() (chan any, error) {
 	case StatusNotStarted:
 		return co.initialEntering, nil
 	case StatusSuspending:
-		return chan_stack.Pop(), nil
+		return chan_stack.Entering.Pop(), nil
 	default:
 		return nil, errors.Join(ErrCoroutineCannotResume, errors.New(string(co.Status)))
 	}
@@ -113,8 +118,8 @@ func (co *T) Resume(x any) (any, error) {
 	}
 
 	// make returning point and push for next yield
-	returning := chan_stack.PushNew()
-	defer chan_stack.DeleteBySelf(returning)
+	returning := chan_stack.Returning.PushNew()
+	defer chan_stack.Returning.DeleteBySelf(returning)
 
 	co.Status = StatusRunning
 
