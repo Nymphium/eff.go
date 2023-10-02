@@ -4,32 +4,33 @@ import "github.com/nymphium/eff.go/coro"
 
 type handleFunc = func(arg any, k Cont) (any, error)
 
-type handler struct {
+// The type of a handler.
+type Handler struct {
 	effh map[effID]handleFunc
 	valh Cont
 }
 
 // NewHandler creates a new handler with a default value handler.
-func NewHandler(valh Cont) handler {
-	return handler{
+func NewHandler(valh Cont) Handler {
+	return Handler{
 		effh: map[effID]handleFunc{},
 		valh: valh,
 	}
 }
 
 // On chains a handler for the effect.
-func (h handler) On(eff *T, handleFunc handleFunc) handler {
+func (h Handler) On(eff *T, handleFunc handleFunc) Handler {
 	h.effh[eff.id] = handleFunc
 	return h
 }
 
 // To updates a value handler to the handler.
-func (h handler) To(valh Cont) handler {
+func (h Handler) To(valh Cont) Handler {
 	h.valh = valh
 	return h
 }
 
-func (h handler) Handle(thunk func() (any, error)) (any, error) {
+func (h Handler) Handle(thunk func() (any, error)) (any, error) {
 	if h.valh == nil {
 		h.valh = func(r any) (any, error) {
 			return r, nil
