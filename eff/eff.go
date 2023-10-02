@@ -20,9 +20,6 @@ One-shot algebraic effect using coroutines.
     print("hello, ")
     return nil, nil
   })
-
-See [internal/examples/eff] for example.
-[internal/examples/eff]: https://github.com/Nymphium/eff.go/tree/master/internal/examples/eff
 */
 package eff
 
