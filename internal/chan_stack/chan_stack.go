@@ -6,39 +6,26 @@ import (
 	"sync"
 )
 
-type ch = chan any
+type ch[A any] chan A
 
-type t struct {
-	chans []ch
+type t[A any] struct {
+	chans []ch[A]
 	mu    sync.Mutex
 }
 
-// channel call stack for entering/returning goroutine.
-var (
-	Entering = &t{
-		chans: make([]ch, 0),
-		mu:    sync.Mutex{},
+func New[A any]() *t[A] {
+	return &t[A]{chans: make([]ch[A], 0),
+		mu: sync.Mutex{},
 	}
-
-	Returning = &t{
-		chans: make([]ch, 0),
-		mu:    sync.Mutex{},
-	}
-)
-
-func (t *t) PushNew() ch {
-	ch := make(ch)
-	t.Push(ch)
-	return ch
 }
 
-func (t *t) Push(ch ch) {
+func (t *t[A]) Push(ch ch[A]) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.chans = append(t.chans, ch)
 }
 
-func (t *t) Pop() ch {
+func (t *t[A]) Pop() ch[A] {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -54,7 +41,8 @@ func (t *t) Pop() ch {
 	return ch
 }
 
-func (t *t) DeleteBySelf(ch ch) {
+// DeleteBySelf deletes the specified channel from the stack.
+func (t *t[A]) DeleteBySelf(ch ch[A]) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
