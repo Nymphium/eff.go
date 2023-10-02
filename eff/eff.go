@@ -28,6 +28,7 @@ package eff
 
 import "github.com/nymphium/eff.go/coro"
 
+// The (rough) type of continuation.
 type Cont = func(any) (any, error)
 
 // The ID of effect.

@@ -9,6 +9,7 @@ type handler struct {
 	valh Cont
 }
 
+// NewHandler creates a new handler with a default value handler.
 func NewHandler(valh Cont) handler {
 	return handler{
 		effh: map[effID]handleFunc{},
@@ -16,11 +17,13 @@ func NewHandler(valh Cont) handler {
 	}
 }
 
+// On chains a handler for the effect.
 func (h handler) On(eff *T, handleFunc handleFunc) handler {
 	h.effh[eff.id] = handleFunc
 	return h
 }
 
+// To updates a value handler to the handler.
 func (h handler) To(valh Cont) handler {
 	h.valh = valh
 	return h
