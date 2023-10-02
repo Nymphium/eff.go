@@ -105,4 +105,17 @@ func TestExn(t *testing.T) {
 
 		require.ErrorIs(t, ErrX, res)
 	})
+
+	t.Run("anyerror", func(t *testing.T) {
+		t.Parallel()
+
+		res := exn.Try(func() ty {
+			exn.Check(Err)
+			return 0
+		}, exn.Handlers[ty]{
+			exn.AnyError: func(error) ty { return 42 },
+		})
+
+		require.Equal(t, 42, res)
+	})
 }
