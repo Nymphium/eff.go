@@ -15,6 +15,11 @@ func TestEff(t *testing.T) {
 		return arg, nil
 	})
 
+	t.Run("equality", func(t *testing.T) {
+		t.Parallel()
+		require.NotEqual(t, eff.New(), eff.New())
+	})
+
 	t.Run("abort", func(t *testing.T) {
 		t.Parallel()
 
